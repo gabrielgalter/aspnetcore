@@ -70,6 +70,54 @@ namespace Microsoft.AspNetCore.Hosting
 
         [Theory]
         [MemberData(nameof(DefaultWebHostBuildersWithConfig))]
+        public async Task MultipleUseStartupCallsLastWins(IWebHostBuilder builder)
+        {
+            var server = new TestServer();
+            var host = builder.UseServer(server)
+                              .UseStartup<StartupCtorThrows>()
+                              .UseStartup(context => throw new InvalidOperationException("This doesn't run"))
+                              .Configure(app =>
+                              {
+                                  throw new InvalidOperationException("This doesn't run");
+                              })
+                              .Configure(app =>
+                              {
+                                  app.Run(context =>
+                                  {
+                                      return context.Response.WriteAsync("This wins");
+                                  });
+                              })
+                              .Build();
+            using (host)
+            {
+                await host.StartAsync();
+                await AssertResponseContains(server.RequestDelegate, "This wins");
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(DefaultWebHostBuildersWithConfig))]
+        public async Task UseStartupFactoryWorks(IWebHostBuilder builder)
+        {
+            void ConfigureServices(IServiceCollection services) { }
+            void Configure(IApplicationBuilder app)
+            {
+                app.Run(context => context.Response.WriteAsync("UseStartupFactoryWorks"));
+            }
+
+            var server = new TestServer();
+            var host = builder.UseServer(server)
+                              .UseStartup(context => new DelegatingStartup(ConfigureServices, Configure))
+                              .Build();
+            using (host)
+            {
+                await host.StartAsync();
+                await AssertResponseContains(server.RequestDelegate, "UseStartupFactoryWorks");
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(DefaultWebHostBuildersWithConfig))]
         public async Task StartupCtorThrows_Fallback(IWebHostBuilder builder)
         {
             var server = new TestServer();
@@ -199,7 +247,7 @@ namespace Microsoft.AspNetCore.Hosting
                     options.ValidateScopes = true;
                 });
 
-            using  var host = hostBuilder.Build();
+            using var host = hostBuilder.Build();
             Assert.Throws<InvalidOperationException>(() => host.Start());
             Assert.True(configurationCallbackCalled);
         }
@@ -1218,7 +1266,7 @@ namespace Microsoft.AspNetCore.Hosting
 
             Assert.Equal("nestedvalue", builder.GetSetting("key"));
 
-            using  var host = builder.Build();
+            using var host = builder.Build();
             var appConfig = host.Services.GetRequiredService<IConfiguration>();
             Assert.Equal("nestedvalue", appConfig["key"]);
         }
@@ -1572,6 +1620,21 @@ namespace Microsoft.AspNetCore.Hosting
                                new KeyValuePair<string,string>("testhostingstartup:config", "value")
                            }));
             }
+        }
+
+        public class DelegatingStartup
+        {
+            private readonly Action<IServiceCollection> _configureServices;
+            private readonly Action<IApplicationBuilder> _configure;
+
+            public DelegatingStartup(Action<IServiceCollection> configureServices, Action<IApplicationBuilder> configure)
+            {
+                _configureServices = configureServices;
+                _configure = configure;
+            }
+
+            public void ConfigureServices(IServiceCollection services) => _configureServices(services);
+            public void Configure(IApplicationBuilder app) => _configure(app);
         }
 
         public class StartupWithResolvedDisposableThatThrows
