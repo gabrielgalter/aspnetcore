@@ -9,7 +9,6 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.JSInterop;
 using Microsoft.JSInterop.WebAssembly;
 
@@ -20,19 +19,15 @@ namespace Microsoft.AspNetCore.Components.WebAssembly.Services
     ///
     /// Supports finding pre-loaded assemblies in a server or pre-rendering context.
     /// </summary>
-    public class LazyAssemblyLoader
+    public sealed class LazyAssemblyLoader
     {
         internal const string GetDynamicAssemblies = "window.Blazor._internal.getLazyAssemblies";
         internal const string ReadDynamicAssemblies = "window.Blazor._internal.readLazyAssemblies";
 
-        private List<Assembly> _loadedAssemblyCache = new List<Assembly>();
-
-        private readonly IServiceProvider _provider;
-
-        public LazyAssemblyLoader(IServiceProvider provider)
+        private readonly IJSRuntime _jsRuntime;
+        public LazyAssemblyLoader(IJSRuntime jsRuntime)
         {
-            _provider = provider;
-            _loadedAssemblyCache = AppDomain.CurrentDomain.GetAssemblies().ToList();
+            _jsRuntime = jsRuntime;
         }
 
         /// <summary>
@@ -55,13 +50,15 @@ namespace Microsoft.AspNetCore.Components.WebAssembly.Services
 
         private Task<IEnumerable<Assembly>> LoadAssembliesInServerAsync(IEnumerable<string> assembliesToLoad)
         {
-            var loadedAssemblies = _loadedAssemblyCache.Where(assembly =>
-                assembliesToLoad.Contains(assembly.GetName().Name + ".dll"));
+            IEnumerable<Assembly> loadedAssemblies;
 
-            if (loadedAssemblies.Count() != assembliesToLoad.Count())
+            try
             {
-                var unloadedAssemblies = assembliesToLoad.Except(loadedAssemblies.Select(a => a.GetName().Name + ".dll"));
-                throw new InvalidOperationException($"Unable to find the following assemblies: {string.Join(",", unloadedAssemblies)}. Make sure that the appplication is referencing the assemblies and that they are present in the output folder.");
+                loadedAssemblies = assembliesToLoad.Select(assemblyName => Assembly.Load(Path.GetFileNameWithoutExtension(assemblyName)));
+            }
+            catch (FileNotFoundException ex)
+            {
+                throw new InvalidOperationException($"Unable to find the following assembly: {ex.FileName}. Make sure that the appplication is referencing the assemblies and that they are present in the output folder.");
             }
 
             return Task.FromResult(loadedAssemblies);
@@ -69,12 +66,12 @@ namespace Microsoft.AspNetCore.Components.WebAssembly.Services
 
         private async Task<IEnumerable<Assembly>> LoadAssembliesInClientAsync(IEnumerable<string> assembliesToLoad)
         {
-            var jsRuntime = _provider.GetRequiredService<IJSRuntime>();
-            // Only load assemblies that haven't already been lazily-loaded
-            var newAssembliesToLoad = assembliesToLoad.Except(_loadedAssemblyCache.Select(a => a.GetName().Name + ".dll"));
+            // Only load assemblies that haven't already been loaded into the application context
+            var loadedAssemblyCache = AppDomain.CurrentDomain.GetAssemblies().ToList();
+            var newAssembliesToLoad = assembliesToLoad.Except(loadedAssemblyCache.Select(a => a.GetName().Name + ".dll"));
             var loadedAssemblies = new List<Assembly>();
 
-            var count = (int)await ((WebAssemblyJSRuntime)jsRuntime).InvokeUnmarshalled<string[], object, object, Task<object>>(
+            var count = (int)await ((WebAssemblyJSRuntime)_jsRuntime).InvokeUnmarshalled<string[], object, object, Task<object>>(
                 GetDynamicAssemblies,
                 assembliesToLoad.ToArray(),
                 null,
@@ -85,7 +82,7 @@ namespace Microsoft.AspNetCore.Components.WebAssembly.Services
                 return loadedAssemblies;
             }
 
-            var assemblies = ((WebAssemblyJSRuntime)jsRuntime).InvokeUnmarshalled<object, object, object, object[]>(
+            var assemblies = ((WebAssemblyJSRuntime)_jsRuntime).InvokeUnmarshalled<object, object, object, object[]>(
                 ReadDynamicAssemblies,
                 null,
                 null,
@@ -99,7 +96,6 @@ namespace Microsoft.AspNetCore.Components.WebAssembly.Services
                 // into the default app context.
                 var loadedAssembly = AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(assembly));
                 loadedAssemblies.Add(loadedAssembly);
-                _loadedAssemblyCache.Add(loadedAssembly);
             }
 
             return loadedAssemblies;
