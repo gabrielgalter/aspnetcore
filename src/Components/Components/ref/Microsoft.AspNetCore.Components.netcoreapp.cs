@@ -587,3 +587,60 @@ namespace Microsoft.AspNetCore.Components.Routing
         public System.Threading.Tasks.Task SetParametersAsync(Microsoft.AspNetCore.Components.ParameterView parameters) { throw null; }
     }
 }
+namespace Microsoft.AspNetCore.Components.Virtualization
+{
+    public sealed partial class InfiniteScroll<TItem> : Microsoft.AspNetCore.Components.Virtualization.VirtualizeBase<TItem>
+    {
+        public InfiniteScroll() { }
+        [Microsoft.AspNetCore.Components.ParameterAttribute]
+        public Microsoft.AspNetCore.Components.RenderFragment? InfiniteScrollFooter { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        [Microsoft.AspNetCore.Components.ParameterAttribute]
+        public Microsoft.AspNetCore.Components.RenderFragment<TItem> Item { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        [Microsoft.AspNetCore.Components.ParameterAttribute]
+        public int ItemBatchSize { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        protected override int ItemCount { get { throw null; } }
+        [Microsoft.AspNetCore.Components.ParameterAttribute]
+        public System.Func<System.Range, System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<TItem>>> ItemsProvider { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        protected override System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Components.RenderFragment> GetItems(int start, int count) { throw null; }
+    }
+    public partial interface IVirtualizationHelper : System.IAsyncDisposable
+    {
+        event System.EventHandler<Microsoft.AspNetCore.Components.Virtualization.SpacerEventArgs> BottomSpacerVisible;
+        event System.EventHandler<Microsoft.AspNetCore.Components.Virtualization.SpacerEventArgs> TopSpacerVisible;
+        System.Threading.Tasks.ValueTask InitAsync(Microsoft.AspNetCore.Components.ElementReference topSpacer, Microsoft.AspNetCore.Components.ElementReference bottomSpacer);
+    }
+    public partial interface IVirtualizationService
+    {
+        Microsoft.AspNetCore.Components.Virtualization.IVirtualizationHelper CreateVirtualizationHelper();
+    }
+    public partial class SpacerEventArgs : System.EventArgs
+    {
+        public SpacerEventArgs(float spacerSize, float containerSize) { }
+        public float ContainerSize { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+        public float SpacerSize { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+    }
+    public abstract partial class VirtualizeBase<TItem> : Microsoft.AspNetCore.Components.ComponentBase, System.IAsyncDisposable
+    {
+        protected VirtualizeBase() { }
+        protected abstract int ItemCount { get; }
+        [Microsoft.AspNetCore.Components.ParameterAttribute]
+        public float ItemSize { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder) { }
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        protected abstract System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Components.RenderFragment> GetItems(int start, int count);
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        protected override System.Threading.Tasks.Task OnAfterRenderAsync(bool firstRender) { throw null; }
+        protected override void OnParametersSet() { }
+    }
+    public sealed partial class Virtualize<TItem> : Microsoft.AspNetCore.Components.Virtualization.VirtualizeBase<TItem>
+    {
+        public Virtualize() { }
+        [Microsoft.AspNetCore.Components.ParameterAttribute]
+        public Microsoft.AspNetCore.Components.RenderFragment<TItem>? ChildContent { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        protected override int ItemCount { get { throw null; } }
+        [Microsoft.AspNetCore.Components.ParameterAttribute]
+        public System.Collections.Generic.ICollection<TItem> Items { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        protected override System.Collections.Generic.IEnumerable<Microsoft.AspNetCore.Components.RenderFragment> GetItems(int start, int count) { throw null; }
+    }
+}

@@ -208,6 +208,28 @@ namespace Microsoft.AspNetCore.Components.Routing
         All = 1,
     }
 }
+namespace Microsoft.AspNetCore.Components.Virtualization
+{
+    public partial class WebVirtualizationHelper : Microsoft.AspNetCore.Components.Virtualization.IVirtualizationHelper, System.IAsyncDisposable
+    {
+        public WebVirtualizationHelper(Microsoft.JSInterop.IJSRuntime jsRuntime) { }
+        public event System.EventHandler<Microsoft.AspNetCore.Components.Virtualization.SpacerEventArgs>? BottomSpacerVisible { add { } remove { } }
+        public event System.EventHandler<Microsoft.AspNetCore.Components.Virtualization.SpacerEventArgs>? TopSpacerVisible { add { } remove { } }
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public System.Threading.Tasks.ValueTask InitAsync(Microsoft.AspNetCore.Components.ElementReference topSpacer, Microsoft.AspNetCore.Components.ElementReference bottomSpacer) { throw null; }
+        [Microsoft.JSInterop.JSInvokableAttribute]
+        public void OnBottomSpacerVisible(float spacerSize, float containerSize) { }
+        [Microsoft.JSInterop.JSInvokableAttribute]
+        public void OnTopSpacerVisible(float spacerSize, float containerSize) { }
+    }
+    public partial class WebVirtualizationService : Microsoft.AspNetCore.Components.Virtualization.IVirtualizationService
+    {
+        public WebVirtualizationService(Microsoft.JSInterop.IJSRuntime jsRuntime) { }
+        public Microsoft.AspNetCore.Components.Virtualization.IVirtualizationHelper CreateVirtualizationHelper() { throw null; }
+    }
+}
 namespace Microsoft.AspNetCore.Components.Web
 {
     [Microsoft.AspNetCore.Components.BindElementAttribute("select", null, "value", "onchange")]
